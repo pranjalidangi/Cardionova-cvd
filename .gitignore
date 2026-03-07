@@ -1,0 +1,43 @@
+# Node modules — NEVER commit this (thousands of files, 200MB+)
+node_modules/
+frontend/node_modules/
+
+# Virtual Environment — never push this (100MB+)
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# Data files — too large for GitHub
+data/framingham.csv
+data/framingham_processed.csv
+
+# Trained models — large binary files
+data/models/*.pkl
+
+# VS Code settings
+.vscode/
+
+# Environment variables (passwords, API keys)
+.env
+*.env
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build output
+frontend/dist/
+frontend/build/
+
+# scikit-optimize cache
+*.pkl.lock

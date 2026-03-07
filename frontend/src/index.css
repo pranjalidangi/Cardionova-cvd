@@ -1,0 +1,13 @@
+/* DaisyUI CDN = Tailwind CSS included */
+@import "https://cdn.jsdelivr.net/npm/daisyui@4.4.20/dist/full.min.css";
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  min-height: 100vh;
+}
