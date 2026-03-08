@@ -62,7 +62,7 @@ Cardionova/
 |---|---|---|
 | Module 1 | ✅ Complete | EDA, KNN Imputation, Feature Engineering |
 | Module 2 | ✅ Complete | Model Training, 3-Stage Hyperparameter Tuning |
-| Module 3 | ⏳ In Progress | SHAP Explainability |
+| Module 3 | ✅ Complete | SHAP Explainability — Global + Local |
 | Module 4 | 🔜 Upcoming | FastAPI Backend |
 | Module 5 | 🔜 Upcoming | React Frontend + Docker |
 
