@@ -44,3 +44,9 @@ frontend/build/
 
 # Model files everywhere
 **/*.pkl
+
+backend/.env
+
+# Allow the trained model
+!app/ml_pipeline/model.pkl
+!data/models/cardionova_model.pkl

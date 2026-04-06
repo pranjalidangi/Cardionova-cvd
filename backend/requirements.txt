@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+pymongo
+dnspython
+scikit-learn
+numpy
+shap
+joblib
+pandas
+matplotlib
+reportlab
+Pillow
+python-multipart
+pydantic[email]
+pydantic-settings
