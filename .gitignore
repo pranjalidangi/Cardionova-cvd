@@ -48,5 +48,4 @@ frontend/build/
 backend/.env
 
 # Allow trained Cardionova model
-!backend/model/*.pkl
-!backend/*.pkl
+!backend/models/cardionova_model.pkl
