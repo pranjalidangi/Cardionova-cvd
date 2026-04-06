@@ -47,6 +47,6 @@ frontend/build/
 
 backend/.env
 
-# Allow the trained model
-!app/ml_pipeline/model.pkl
-!data/models/cardionova_model.pkl
+# Allow trained Cardionova model
+!backend/model/*.pkl
+!backend/*.pkl
