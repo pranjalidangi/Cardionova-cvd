@@ -55,9 +55,7 @@ FEATURE_DISPLAY_NAMES = {
     'bmi_category':       'BMI Category',
 }
 
-
 # ── Extract — handles both dict bundle AND direct object ──────────────────────
-# If model_bundle is not a dict, use only 15 original features
 if isinstance(model_bundle, dict):
     model             = model_bundle['model']
     FEATURE_ORDER     = model_bundle['feature_names']
@@ -65,18 +63,10 @@ if isinstance(model_bundle, dict):
 else:
     model             = model_bundle
     OPTIMAL_THRESHOLD = 0.448
-    FEATURE_ORDER     = [
-        'male', 'age', 'education', 'currentSmoker', 'cigsPerDay',
-        'BPMeds', 'prevalentStroke', 'prevalentHyp', 'diabetes',
-        'totChol', 'sysBP', 'diaBP', 'BMI', 'heartRate', 'glucose'
-    ]
+    FEATURE_ORDER     = ORIGINAL_FEATURES
 
-    
 # ── Extract scaler ────────────────────────────────────────────────────────────
 scaler = scaler_bundle['scaler'] if isinstance(scaler_bundle, dict) else scaler_bundle
-
-
-
 
 # ── Helper functions ──────────────────────────────────────────────────────────
 def engineer_features(d: dict) -> dict:
@@ -96,7 +86,6 @@ def engineer_features(d: dict) -> dict:
                                2 if d['BMI'] < 30   else 3)
     return d
 
-
 def get_recommendation(risk_level: str) -> str:
     return {
         "HIGH":     "Urgent cardiology consultation recommended. Please see a doctor within 1 week. Immediate lifestyle intervention and medication review required.",
@@ -104,23 +93,17 @@ def get_recommendation(risk_level: str) -> str:
         "LOW":      "Your heart health looks good! Maintain your healthy lifestyle and get a routine annual checkup.",
     }.get(risk_level, "")
 
-
 # ── Main predict function ─────────────────────────────────────────────────────
 def predict(input_data) -> dict:
     raw       = input_data.model_dump() if hasattr(input_data, 'model_dump') else input_data
     full_data = engineer_features(raw)
 
     # ── Scale original 15 for model ──────────────────────────────────────────
-    original_df  = pd.DataFrame(
+    original_df = pd.DataFrame(
         [[full_data[f] for f in ORIGINAL_FEATURES]],
         columns=ORIGINAL_FEATURES
     )
     scaled_15 = scaler.transform(original_df)   # shape (1, 15)
-
-    # ── Build 21-feature array for SHAP explainer ────────────────────────────
-    # Engineered features unscaled, appended after scaled 15
-    engineered_vals = np.array([[full_data[f] for f in ENGINEERED_FEATURES]])  # (1, 6)
-    scaled_21 = np.hstack([scaled_15, engineered_vals])  # (1, 21)
 
     # ── Predict using 15 features ────────────────────────────────────────────
     probability = float(model.predict_proba(scaled_15)[0][1])
@@ -132,11 +115,8 @@ def predict(input_data) -> dict:
     else:
         risk_level = "LOW"
 
-    # ── SHAP using 21 features ───────────────────────────────────────────────
-    shap_vals = explainer(scaled_21).values[0]   # returns 21 shap values
-
-    # Map shap values to all 21 feature names (15 original + 6 engineered)
-    all_features_ordered = ORIGINAL_FEATURES + ENGINEERED_FEATURES
+    # ── SHAP using 15 features (matches model coefficients) ──────────────────
+    shap_vals = explainer(scaled_15).values[0]   # returns 15 shap values
 
     all_contributions = sorted([
         {
@@ -145,16 +125,15 @@ def predict(input_data) -> dict:
             'shap_value': round(float(sv), 4),
             'direction':  'INCREASES RISK' if sv > 0 else 'DECREASES RISK',
             'magnitude':  'High' if abs(sv) > 1.0 else ('Medium' if abs(sv) > 0.3 else 'Low'),
-
         }
-        for feat, sv in zip(all_features_ordered, shap_vals)
+        for feat, sv in zip(ORIGINAL_FEATURES, shap_vals)
     ], key=lambda x: abs(x['shap_value']), reverse=True)
 
     engineered = {k: full_data[k] for k in ENGINEERED_FEATURES}
 
     all_shap = {
         FEATURE_DISPLAY_NAMES.get(f, f): round(float(sv), 4)
-        for f, sv in zip(all_features_ordered, shap_vals)
+        for f, sv in zip(ORIGINAL_FEATURES, shap_vals)
     }
 
     return {
