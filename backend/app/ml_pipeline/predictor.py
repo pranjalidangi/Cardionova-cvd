@@ -1,6 +1,7 @@
 import joblib
 import pandas as pd
 import numpy as np
+import shap
 import os
 from dotenv import load_dotenv
 
@@ -10,14 +11,13 @@ load_dotenv()
 BASE_DIR   = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 MODELS_DIR = os.path.join(BASE_DIR, "models")
 
-MODEL_PATH  = os.getenv("MODEL_PATH",  os.path.join(MODELS_DIR, "cardionova_model.pkl"))
-SCALER_PATH = os.getenv("SCALER_PATH", os.path.join(MODELS_DIR, "scaler.pkl"))
-SHAP_PATH   = os.getenv("SHAP_PATH",   os.path.join(MODELS_DIR, "shap_explainer.pkl"))
+MODEL_PATH       = os.getenv("MODEL_PATH",       os.path.join(MODELS_DIR, "cardionova_model.pkl"))
+SCALER_PATH      = os.getenv("SCALER_PATH",      os.path.join(MODELS_DIR, "scaler.pkl"))
+BACKGROUND_PATH  = os.getenv("BACKGROUND_PATH",  os.path.join(MODELS_DIR, "shap_background.npy"))
 
 # ── Load artifacts ────────────────────────────────────────────────────────────
 model_bundle  = joblib.load(MODEL_PATH)
-scaler_bundle = joblib.load(SCALER_PATH)
-explainer     = joblib.load(SHAP_PATH)
+scaler_bundle = joblib.load(SCALER_PATH)#ignore
 
 # ── Feature lists ─────────────────────────────────────────────────────────────
 ORIGINAL_FEATURES = [
@@ -68,6 +68,15 @@ else:
 # ── Extract scaler ────────────────────────────────────────────────────────────
 scaler = scaler_bundle['scaler'] if isinstance(scaler_bundle, dict) else scaler_bundle
 
+# ── Recreate SHAP explainer from background data (no pickle, no Numba issues) ─
+background_data = np.load(BACKGROUND_PATH)
+background_df   = pd.DataFrame(background_data, columns=ORIGINAL_FEATURES)
+explainer       = shap.LinearExplainer(
+    model,
+    background_df,
+    feature_perturbation="interventional"
+)
+
 # ── Helper functions ──────────────────────────────────────────────────────────
 def engineer_features(d: dict) -> dict:
     d = d.copy()
@@ -86,12 +95,14 @@ def engineer_features(d: dict) -> dict:
                                2 if d['BMI'] < 30   else 3)
     return d
 
+
 def get_recommendation(risk_level: str) -> str:
     return {
         "HIGH":     "Urgent cardiology consultation recommended. Please see a doctor within 1 week. Immediate lifestyle intervention and medication review required.",
         "MODERATE": "Schedule a doctor's appointment within 2-4 weeks. Begin lifestyle changes now — diet, exercise, and smoking cessation if applicable.",
         "LOW":      "Your heart health looks good! Maintain your healthy lifestyle and get a routine annual checkup.",
     }.get(risk_level, "")
+
 
 # ── Main predict function ─────────────────────────────────────────────────────
 def predict(input_data) -> dict:
@@ -116,7 +127,8 @@ def predict(input_data) -> dict:
         risk_level = "LOW"
 
     # ── SHAP using 15 features (matches model coefficients) ──────────────────
-    shap_vals = explainer(scaled_15).values[0]   # returns 15 shap values
+    scaled_df = pd.DataFrame(scaled_15, columns=ORIGINAL_FEATURES)
+    shap_vals = explainer(scaled_df).values[0]   # returns 15 shap values
 
     all_contributions = sorted([
         {
