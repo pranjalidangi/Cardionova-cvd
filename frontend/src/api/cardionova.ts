@@ -1,7 +1,7 @@
 import axios from "axios";
 import type { HealthFormData, PredictionResult } from "../types";
 
-const BASE = "http://localhost:8000/api";
+const BASE = `${import.meta.env.VITE_API_URL || "http://localhost:8000"}/api`;
 
 export const predict = async (data: HealthFormData): Promise<PredictionResult> => {
   const res = await axios.post(`${BASE}/predict`, data);
